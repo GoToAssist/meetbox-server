@@ -34,7 +34,6 @@ Podio.prototype = {
   			self.access_token = result.access_token;
   			def.resolve(self.access_token);
   		}).on('error', () => {
-  			console
   			def.reject();
   		});
 
@@ -93,7 +92,7 @@ Podio.prototype = {
   	},
 
   	getOrganizations: function () {
-  		return this.getResource('/org/');//.then((orgs) => {console.log(orgs[0].spaces); return orgs});
+  		return this.getResource('/org/');
   	},
 
   	getWorkspaces: function (org, user_id) {

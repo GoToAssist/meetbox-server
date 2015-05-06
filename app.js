@@ -6,7 +6,11 @@ var Promise = require('bluebird');
 var MeetingParser = require('./meetingparser.js');
 
 var app = express();
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
 
+app.use(require('body-parser').json());
+app.use(express.static(__dirname + '/public'));
 
 app.get('/auth', function (req, res) {
   if (req.query.error) {
@@ -18,7 +22,7 @@ app.get('/auth', function (req, res) {
 
   	podio.authorize().then( (access_token) => {
 		podio.getAllCalendars(start, end).then( (calendarResult) => {
-			res.send(MeetingParser.getAllMeetingUrls(calendarResult, start, end));
+			MeetingParser.getAllMeetingUrls(calendarResult, start, end).then((urls) => res.send(urls))
 		});
   	});
   }
@@ -70,7 +74,7 @@ app.get('/meetings', function (req, res) {
 
 	  	podio.authorize(auth_token).then( (access_token) => {
 			podio.getAllCalendars(start, end).then( (calendarResult) => {
-				res.json(MeetingParser.getAllMeetingUrls(calendarResult, start, end));
+				MeetingParser.getAllMeetingUrls(calendarResult, start, end).then((allUrls) => res.json(allUrls));
 			});
 	  	});
 	} else {
@@ -79,12 +83,23 @@ app.get('/meetings', function (req, res) {
 
 });
 
-app.get('/', function (req, res) {
+app.post('/join', function(req, res){
+	var topic = 'join/' + req.body.room.Identifier;
+	io.emit(topic, req.body.meeting);
+	console.log("Joining Room", req.body);
+	res.send("OK");
+});
+
+app.get('/login', function (req, res) {
   var loginUrl = util.format('https://podio.com/oauth/authorize?client_id=%s&redirect_uri=%s', config.appName, config.callbackUrl);
   res.redirect(loginUrl);
 });
 
-var server = app.listen(3000, function () {
+
+io.on('connection', function (socket) {
+});
+
+var server = server.listen(3000, function () {
 
   var host = 'localhost';
   var port = server.address().port;
