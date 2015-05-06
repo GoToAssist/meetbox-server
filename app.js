@@ -28,6 +28,22 @@ app.get('/auth', function (req, res) {
   }
 });
 
+app.get('/user/:user_id', function (req, res) {
+	if (req.headers.authorization) {
+		var auth_token = req.headers.authorization.match(/OAuth2 (.*)/i)[1];
+		
+		var podio = new Podio(config.apiKey, config.appName, config.callbackUrl, req.query.code);
+	  	
+	  	podio.authorize(auth_token).then( () => {
+			podio.getUserInfo().then( (userInfo) => {
+				res.json(userInfo);
+			});
+	  	});
+	} else {
+		res.json([]);
+	}
+});
+
 app.get('/spaces/:user_id', function (req, res) {
 	console.log("Get spaces", req.params.user_id);
 	if (req.headers.authorization) {
@@ -69,11 +85,13 @@ app.get('/meetings', function (req, res) {
 		var auth_token = req.headers.authorization.match(/OAuth2 (.*)/i)[1];
 		
 		var podio = new Podio(config.apiKey, config.appName, config.callbackUrl, req.query.code);
+	  	
 	  	var start = Date.UTC(2015, 4, 5, 8, 0);
 	  	var end = Date.UTC(2015, 4, 5, 9, 1);
 
 	  	podio.authorize(auth_token).then( (access_token) => {
 			podio.getAllCalendars(start, end).then( (calendarResult) => {
+				//console.log(calendarResult);
 				MeetingParser.getAllMeetingUrls(calendarResult, start, end).then((allUrls) => res.json(allUrls));
 			});
 	  	});
@@ -82,6 +100,14 @@ app.get('/meetings', function (req, res) {
 	}
 
 });
+
+app.post('/presence', function(req, res){
+	var topic = 'presence/' + req.body.room.Identifier;
+	io.emit(topic, req.body.meeting);
+	console.log("Presence sent", req.body);
+	res.send("OK");
+});
+
 
 app.post('/join', function(req, res){
 	var topic = 'join/' + req.body.room.Identifier;

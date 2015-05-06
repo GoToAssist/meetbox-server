@@ -2,7 +2,11 @@
 <script>
   var socket = io.connect('http://meetbox.ngrok.io');
   socket.on('join/LENNON', function (data) {
-  	document.location = data.url;
+  	//document.location = data.url;
     document.body.innerHTML = '<iframe width="100%" height="100%" src="'+data.url+'"/>';
+  });
+
+  socket.on('presence/LENNON', function (data) {
+  	console.log("PPP", data);
   });
 </script>

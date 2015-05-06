@@ -3,20 +3,38 @@ var rest = require('restler');
 var Promise = require('bluebird');
 var util = require('util');
 
-module.exports = {
+var hasMeetingExpr = /https?:\/\/(gotomeet.me|g2m.me|free.gotomeeting.com|global.gotomeeting.com\/join)\/[a-z0-9]+/gi;
+
+var Parser = {
 	getAllMeetingUrls: function (allMeetings, startTimeUTC, endTimeUTC) {
 		var start = moment(startTimeUTC);
 		var end = moment(endTimeUTC);
-		
-		var meetings = allMeetings.reduce((a,b) => a.concat(b));
 
-		var filteredMeetings = meetings.filter((m) => {
+		var filteredMeetings = allMeetings.filter((m) => {
 			return moment(m.start_utc + ' +0000', 'YYYY-MM-DD hh:mm:ss ZZ').isBetween(start, end);
 		});
 
-		var allUrls = JSON.stringify(filteredMeetings).match(/https?:\/\/(gotomeet.me|g2m.me|free.gotomeeting.com|global.gotomeeting.com\/join)\/[a-z0-9]+/gi);
-		return Promise.all(allUrls.map(this.convertToInstantJoin));
-		//return JSON.stringify(filteredMeetings).match(/https?:\/\/(gotomeet.me|g2m.me|free.gotomeeting.com|global.gotomeeting.com\/join)\/[a-z0-9]+/gi);
+		filteredMeetings = filteredMeetings.filter((m) => {
+			return JSON.stringify(m).match(hasMeetingExpr);
+		});
+
+		//var allUrls = JSON.stringify(filteredMeetings).match(hasMeetingExpr);
+		return Promise.all(filteredMeetings.map(Parser.mapMeeting));
+	},
+
+	mapMeeting: function(meeting) {
+		var url = JSON.stringify(meeting).match(hasMeetingExpr);
+		console.log("url[0]", url[0]);
+		return Parser.convertToInstantJoin(url[0]).then((convertedUrl) => {
+			var mapped = {
+				url: convertedUrl,
+				title: meeting.title,
+				startTimeUTC: meeting.start_utc,
+				endTimeUTC: meeting.end_utc
+			};
+			console.log(mapped);
+			return mapped;
+		});
 	},
 
 	convertToInstantJoin: function (url) {
@@ -44,3 +62,5 @@ module.exports = {
 		return def.promise;
 	}
 };
+
+module.exports = Parser;

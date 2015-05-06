@@ -83,7 +83,7 @@ Podio.prototype = {
   				linkedAccounts.map(
   					(link) => self.getLinkedCalendar( link.linked_account_id, fromDate, toDate )
   				).concat([self.getCalendar(fromDate, toDate)])
-  			);
+  			).then((cResult) => cResult.reduce((a,b) => a.concat(b)));
   		});
   	},
 
@@ -137,8 +137,11 @@ Podio.prototype = {
   				return roomItems.items.map(self.mapRoomItem);
   			});
   		});
-  				
-  	}
+  	},
+
+  	getUserInfo: function(user_id) {
+  		return this.getResource('/user/status');
+  	},
  };
 
  module.exports = Podio;
