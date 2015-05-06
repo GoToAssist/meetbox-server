@@ -125,7 +125,7 @@ app.get('/login', function (req, res) {
 io.on('connection', function (socket) {
 });
 
-var server = server.listen(3000, function () {
+var server = server.listen(process.env.PORT || 3000, function () {
 
   var host = 'localhost';
   var port = server.address().port;
