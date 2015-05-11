@@ -123,11 +123,11 @@ Podio.prototype = {
   	},
 
   	mapRoomItem: function(roomItem) {
-		var newRoom = {};
-		roomItem.fields.forEach(field => {
-			newRoom[field.label] = field.values[0].value;
-		});
-		return newRoom;
+  		var newRoom = {};
+  		roomItem.fields.forEach(field => {
+  			newRoom[field.label] = field.values[0].value;
+  		});
+		  return newRoom;
   	},
 
   	getRooms: function (space_id) {

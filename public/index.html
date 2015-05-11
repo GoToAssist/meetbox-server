@@ -1,12 +1,29 @@
+<html>
+
+<head>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  var socket = io.connect('http://guarded-citadel-3780.herokuapp.com');
+  var socket = io.connect('/');
   socket.on('join/LENNON', function (data) {
-  	//document.location = data.url;
-    document.body.innerHTML = '<iframe width="100%" height="100%" src="'+data.url+'"/>';
+  	document.getElementById('meeting').src = data.meeting.url;
   });
 
   socket.on('presence/LENNON', function (data) {
-  	console.log("PPP", data);
+  	if (data.left) {
+  		document.getElementById('avatar').src = '';	
+  		document.getElementById('name').innerText = '';	
+  	} else {
+  		document.getElementById('avatar').src = data.user.profile.image.thumbnail_link;	
+  		document.getElementById('name').innerText = 'Welcome, ' + data.user.profile.name;	
+  	}
+  	
   });
 </script>
+</head>
+<body>
+<div id="name"/></div>
+<image id="avatar"/></image>
+<iframe width="100%" height="100%" id="meeting">
+</iframe>
+</body>
+</html>

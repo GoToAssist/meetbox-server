@@ -3,16 +3,26 @@ var rest = require('restler');
 var Promise = require('bluebird');
 var util = require('util');
 
-var hasMeetingExpr = /https?:\/\/(gotomeet.me|g2m.me|free.gotomeeting.com|global.gotomeeting.com\/join)\/[a-z0-9]+/gi;
+var hasMeetingExpr = /https?:\/\/(gotomeet.me|g2m.me|next.g2m.me|free.gotomeeting.com|next.free.gotomeeting.com|global.gotomeeting.com\/join)\/[a-z0-9]+/gi;
 
 var Parser = {
 	getAllMeetingUrls: function (allMeetings, startTimeUTC, endTimeUTC) {
-		var start = moment(startTimeUTC);
-		var end = moment(endTimeUTC);
+		var start = moment.utc(startTimeUTC);
+		var end = moment.utc(endTimeUTC);
 
 		var filteredMeetings = allMeetings.filter((m) => {
-			return moment(m.start_utc + ' +0000', 'YYYY-MM-DD hh:mm:ss ZZ').isBetween(start, end);
+			var startTime = moment.utc(m.start_utc, 'YYYY-MM-DD hh:mm:ss ZZ');
+			var endTime = moment.utc(m.end_utc, 'YYYY-MM-DD hh:mm:ss ZZ');
+			var now = moment.utc();
+
+			console.log(endTime.isAfter(now), startTime.isBetween(start, end), endTime.isBetween(start, end), now.calendar(), start.calendar(), end.calendar(), startTime.calendar(), endTime.calendar());
+
+			return endTime.isAfter(now) && // Meeting has not ended
+				(startTime.isBetween(start, end) || // And Meeting starts in the interval
+				endTime.isBetween(start, end)); // Or meeting ends in the interval
 		});
+
+		console.log(filteredMeetings);
 
 		filteredMeetings = filteredMeetings.filter((m) => {
 			return JSON.stringify(m).match(hasMeetingExpr);
@@ -42,7 +52,9 @@ var Parser = {
 		console.log('URL', url);
 
 		if (url.indexOf("free.gotomeeting") >= 0 || url.indexOf("g2m.me") >= 0) {
-			console.log('URL is free');
+			if (!url.match(/https?:\/\/next/i)) {
+				url = url.replace(/:\/\//i, '://next.');
+			}
 			def.resolve(url);
 		} else if (url.match(/[0-9]+$/)) {
 			var meetingId = url.match(/[0-9]+$/);

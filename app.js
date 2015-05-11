@@ -4,6 +4,7 @@ var express = require('express');
 var util = require('util');
 var Promise = require('bluebird');
 var MeetingParser = require('./meetingparser.js');
+var moment = require('moment');
 
 var app = express();
 var server = require('http').Server(app);
@@ -17,8 +18,8 @@ app.get('/auth', function (req, res) {
   	res.send(util.format('Access denied: %s %s %s', req.query.error_reason, req.query.error, error_description));
   } else {
   	var podio = new Podio(config.apiKey, config.appName, config.callbackUrl, req.query.code);
-  	var start = Date.UTC(2015, 4, 5, 8, 0);
-  	var end = Date.UTC(2015, 4, 5, 9, 1);
+  	var start = moment.utc().subtract(1, 'hour').toDate();
+  	var end = moment.utc().add(1, 'hour').toDate();
 
   	podio.authorize().then( (access_token) => {
 		podio.getAllCalendars(start, end).then( (calendarResult) => {
@@ -70,7 +71,6 @@ app.get('/rooms/:space_id', function (req, res) {
 	  	
 	  	podio.authorize(auth_token).then( () => {
 			podio.getRooms(req.params.space_id).then( (rooms) => {
-				console.log(rooms);
 				res.json(rooms);
 			});
 	  	});
@@ -86,12 +86,19 @@ app.get('/meetings', function (req, res) {
 		
 		var podio = new Podio(config.apiKey, config.appName, config.callbackUrl, req.query.code);
 	  	
-	  	var start = Date.UTC(2015, 4, 5, 8, 0);
-	  	var end = Date.UTC(2015, 4, 5, 9, 1);
+	  	var start = moment.utc().subtract(1, 'hour').toDate();
+  		var end = moment.utc().add(1, 'hour').toDate();
 
 	  	podio.authorize(auth_token).then( (access_token) => {
 			podio.getAllCalendars(start, end).then( (calendarResult) => {
-				//console.log(calendarResult);
+
+				console.log(calendarResult.map((c) => {
+					return {
+						start_utc: c.start_utc,
+						end_utc: c.end_utc,
+						title: c.title
+					} 
+				}));
 				MeetingParser.getAllMeetingUrls(calendarResult, start, end).then((allUrls) => res.json(allUrls));
 			});
 	  	});
@@ -103,16 +110,14 @@ app.get('/meetings', function (req, res) {
 
 app.post('/presence', function(req, res){
 	var topic = 'presence/' + req.body.room.Identifier;
-	io.emit(topic, req.body.meeting);
-	console.log("Presence sent", req.body);
+	io.emit(topic, req.body);
 	res.send("OK");
 });
 
 
 app.post('/join', function(req, res){
 	var topic = 'join/' + req.body.room.Identifier;
-	io.emit(topic, req.body.meeting);
-	console.log("Joining Room", req.body);
+	io.emit(topic, { meeting: req.body.meeting, user: req.body.user });
 	res.send("OK");
 });
 
